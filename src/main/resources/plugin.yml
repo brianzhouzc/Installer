@@ -1,0 +1,26 @@
+name: ${project.artifactId}
+version: ${project.version}
+authors: [${project.authors}]
+
+###############################################
+
+main: me.codercloud.installer.InstallerPlugin
+commands:
+  inst:
+    usage: /<command>
+    aliases: [installer]
+    description: Main command of installer plugin
+permissions:
+  installer.*:
+    description: Gives access to all installer commands
+    default: op
+    children:
+      installer.install: true
+  installer.install:
+    description: Allows to install plugins
+    default: op
+    children:
+      installer.help: true
+  installer.help:
+    description: Installer help command
+    default: true

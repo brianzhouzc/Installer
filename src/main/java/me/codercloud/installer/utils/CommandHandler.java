@@ -1,6 +1,7 @@
 package me.codercloud.installer.utils;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -37,7 +38,18 @@ public final class CommandHandler {
 			sender.sendMessage(unknownCommand.replaceAll("<cmd>", "'" + cmd + "'").replaceAll("<user>", sender.getName()));
 		return true;
 	}
-
+	
+	public List<String> handleTabComplete(CommandSender sender, Command command,
+			String label, String[] args) {
+		ArrayList<String> strings = new ArrayList<String>();
+		
+		for (CommandArgs cmd : cmds) {
+			cmd.tabComplete(strings, sender, command, label, args);
+		}
+		
+		return strings;
+	}
+	
 	private String helpHeader = ChatColor.YELLOW + "Help (Page <p>/<mp>):",
 			noCmdFound = ChatColor.RED + "No commands found",
 			descSeperator = " -> ";

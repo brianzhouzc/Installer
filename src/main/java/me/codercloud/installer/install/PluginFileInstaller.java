@@ -15,7 +15,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.AuthorNagException;
+import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PluginFileInstaller extends Task<InstallerPlugin> {
@@ -44,11 +46,10 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 			p.sendMessage(ChatColor.BLUE + "Starting instalation of 1 file");
 		else
 			p.sendMessage(ChatColor.BLUE + "Starting instalation of " + files.length + " files");
-		
-		final File pluginDir = plugin.getFile().getParentFile();
-		
+				
 		HashMap<String, String> installed = new HashMap<String, String>();
 		boolean reloadNeeded = false;
+		boolean error = false;
 		
 		ArrayList<Plugin> toEnable = new ArrayList<Plugin>();
 		
@@ -67,21 +68,10 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 					f.setAccessible(true);
 					output = (File) f.get(oldVersion);
 				} 
-				if (output == null){
-					StringBuilder b = new StringBuilder();
-					for(char c : pluginfile.getName().toCharArray())
-						if(Character.isLetterOrDigit(c))
-							b.append(c);
-					String pre = b.toString();
-					output = new File(pluginDir, pre + ".jar");
-					int att = 0;
-					while(output.exists()) {
-						if(att >= 10) {
-							throw new AuthorNagException(ChatColor.RED + "Could not find a file for " + pluginfile.getName() + " v" + pluginfile.getVersion());
-						}
-						output = new File(pluginDir, pre + att + ".jar");
-					}
-				}
+				if (output == null)
+					output = plugin.getPluginUtil().findFileForPlugin(pluginfile.getName());
+				if(output == null)
+					throw new AuthorNagException(ChatColor.RED + "Couldn't find a file for " + pluginfile.getName() + " v" + pluginfile.getVersion());
 				
 				if(!output.exists()) {
 					output.getParentFile().mkdirs();
@@ -96,15 +86,30 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 				
 				installed.put(pluginfile.getName(), (pluginfile.isUpdate() ? ChatColor.LIGHT_PURPLE : ChatColor.GREEN).toString());
 				
-				if(update) {
+				if(update && !plugin.getPluginUtil().unloadPlugin(oldVersion)) {
+					p.sendMessage(ChatColor.LIGHT_PURPLE + "Could not unload " + oldVersion.getName() + " v" + oldVersion.getDescription().getVersion());
 					reloadNeeded = true;
 					continue;
 				}
 				
 				try {
 					toEnable.add(Bukkit.getServer().getPluginManager().loadPlugin(output));
+				} catch (UnknownDependencyException e) {
+					p.sendMessage(ChatColor.LIGHT_PURPLE + "You need '" + e.getMessage() + "' installed to load " + pluginfile.getName());
+					continue;
+				} catch (InvalidPluginException e) {
+					Throwable cause = e.getCause();
+					if(cause != null && cause instanceof LinkageError) {
+						p.sendMessage(ChatColor.LIGHT_PURPLE + "Problems while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
+						reloadNeeded = true;
+						continue;
+					}
+					e.printStackTrace();
+					error = true;
+					throw new AuthorNagException(ChatColor.RED + "Error while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
 				} catch (Exception e) {
 					e.printStackTrace();
+					error = true;
 					throw new AuthorNagException(ChatColor.RED + "Error while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
 				}
 				
@@ -112,6 +117,7 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 				p.sendMessage(e.getMessage());
 			} catch (Exception e) {
 				e.printStackTrace();
+				error = true;
 				p.sendMessage(ChatColor.RED + "Error while installing " + pluginfile.getName() + " v" + pluginfile.getVersion());
 			}
 		}
@@ -154,8 +160,12 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 				p.sendMessage(ChatColor.BLUE + "Enabled " + b.toString());
 		}
 		
-		if(reloadNeeded)
-			p.sendMessage(ChatColor.BOLD + "" + ChatColor.LIGHT_PURPLE + "Please reload or restart to apply changes!");
+		if(error) {
+			p.sendMessage(ChatColor.RED + "An Error occured! A reload or restart might fix it, but its not guaranteed...\n"
+					+ "Errorreports got printed to the console");
+		} else if(reloadNeeded) {
+			p.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.ITALIC + "A reload or restart should apply all changes");
+		}
 	}
 
 }

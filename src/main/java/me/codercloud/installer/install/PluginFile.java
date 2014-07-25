@@ -1,6 +1,10 @@
 package me.codercloud.installer.install;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -20,6 +24,14 @@ public class PluginFile {
 	private final byte[] data;
 	private final String name;
 	private final String version;
+	
+	public PluginFile(File f) throws InvalidPluginException {
+		this(streamFromFile(f));
+	}
+	
+	public PluginFile(InputStream in) throws InvalidPluginException {
+		this(readPlugin(in));
+	}
 	
 	public PluginFile(byte[] file) throws InvalidPluginException {
 		try {
@@ -83,6 +95,22 @@ public class PluginFile {
 		BaseUtil.setLore(i, version, status);
 		
 		return i;
+	}
+	
+	private static InputStream streamFromFile(File f) throws InvalidPluginException {
+		try {
+			return new FileInputStream(f);
+		} catch (FileNotFoundException e) {
+			throw new InvalidPluginException();
+		}
+	}
+	
+	private static byte[] readPlugin(InputStream in) throws InvalidPluginException {
+		try {
+			return BaseUtil.readFully(in);
+		} catch (Exception e) {
+			throw new InvalidPluginException();
+		}
 	}
 	
 }

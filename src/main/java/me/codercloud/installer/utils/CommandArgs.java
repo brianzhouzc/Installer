@@ -58,6 +58,14 @@ public abstract class CommandArgs {
 		return true;
 	}
 	
+	public void tabCompleteArgument(ArrayList<String> add, CommandSender s, Command c, String label, String[] args, String argName, String current) {
+		
+	}
+	
+	public void tabCompleteEnd(ArrayList<String> add, CommandSender s, Command c, String label, String[] args, String current, int endoffs) {
+		
+	}
+	
 	public String getCommandFormat() {
 		String cmd = "/" + command;
 		for(int i = 0; i<args.length; i++) {
@@ -106,6 +114,79 @@ public abstract class CommandArgs {
 			if(this.args.length == 0 || !this.args[i-1].equals("<...>"))
 				return false;
 		return true;
+	}
+	
+	public final boolean isCommandStart(Command cmd, String[] args) {
+		if(!cmd.getName().equalsIgnoreCase(command))
+		    return false;
+		int i;
+		for(i = 0; i<args.length; i++) {
+			boolean last = i+1 == args.length;
+
+			
+			if(!(i<this.args.length))
+				if(!this.args[this.args.length-1].equals("<...>"))
+					return false;
+				else
+					return true;
+			
+			if(isVar[i])
+				continue;
+			
+			String arg = this.args[i];
+			if(arg.startsWith("<") && arg.endsWith(">")){
+				String[] sp = arg.substring(1, arg.length()-1).split("/");
+				boolean b = false;
+				for(String s : sp) {
+					if(s.equalsIgnoreCase(args[i]) || (last && s.toLowerCase().startsWith(args[i].toLowerCase())))
+						b = true;
+				}
+				if(b)
+					continue;
+				else
+					return false;
+			}
+			if(last) {
+				if (!arg.toLowerCase().startsWith(args[i].toLowerCase()))
+					return false;
+			} else if(!arg.equalsIgnoreCase(args[i]))
+				return false;
+		}
+		return true;
+	}
+	
+	public final void tabComplete(ArrayList<String> add, CommandSender s, Command c, String label, String[] args) {
+		if(isCommandStart(c, args)) {
+			if(hasPermission(s)) {
+				int i = args.length;
+				if(i>this.args.length)
+					i = this.args.length;
+				
+				i--;
+				
+				String arg = this.args[i];
+				
+				
+				if(isVar[i]) {
+					String current = args[args.length-1];
+					if(arg.equals("<...>"))
+						tabCompleteEnd(add, s, c, label, args, current, args.length-this.args.length);
+					else
+						tabCompleteArgument(add, s, c, label, args, arg, current);
+				} else {
+					if(arg.startsWith("<") && arg.endsWith(">")){
+						String[] sp = arg.substring(1, arg.length()-1).split("/");
+						for(String st : sp) {
+							if((st.toLowerCase().startsWith(args[i].toLowerCase())))
+								add.add(st);
+						}
+					} else {
+						if((arg.toLowerCase().startsWith(args[i].toLowerCase())))
+							add.add(arg);
+					}
+				}
+			}
+		}
 	}
 	
 	public final String getVar(String varName, String[] args) {

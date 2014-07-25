@@ -1,5 +1,8 @@
 package me.codercloud.installer.utils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.bukkit.inventory.ItemStack;
@@ -7,6 +10,18 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 public class BaseUtil  {
 
+	public static byte[] readFully(InputStream s) throws IOException {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		byte[] buff = new byte[2048];
+		int l;
+		
+		while((l=s.read(buff)) != -1) {
+			os.write(buff, 0, l);
+		}
+		
+		return null;
+	}
+	
 	public static String connect(String a, String ... strings) {
 		StringBuilder b = new StringBuilder();
 		for(int i = 0, j = strings.length-1; i<j; i++)

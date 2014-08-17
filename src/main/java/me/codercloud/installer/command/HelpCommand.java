@@ -1,13 +1,14 @@
 package me.codercloud.installer.command;
 
+import me.codercloud.installer.utils.CommandHandler;
+import me.codercloud.installer.utils.CommandHandler.CommandListener;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.permissions.Permissible;
 
-import me.codercloud.installer.utils.CommandArgs;
-import me.codercloud.installer.utils.CommandHandler;
-
-public class HelpCommand extends CommandArgs {
+public class HelpCommand extends CommandListener {
 	
 	public HelpCommand() {
 		super("/inst <?/help> <var=page>");
@@ -19,17 +20,17 @@ public class HelpCommand extends CommandArgs {
 		String page = getVar("page", args);
 		
 		if(page == null)
-			h.sendHelp(sender, 1, 5);
+			sender.sendMessage(h.getHelp(sender, 1, 5));
 		else
 			try {
-				h.sendHelp(sender, Integer.valueOf(page), 5);
+				sender.sendMessage(h.getHelp(sender, Integer.valueOf(page), 5));
 			} catch (NumberFormatException e) {
 				sender.sendMessage(ChatColor.RED + "'" + page + "' is not a number");
 			}
 	}
 	
 	@Override
-	public boolean hasPermission(CommandSender p) {
+	public boolean hasPermission(Permissible p) {
 		return p.hasPermission("installer.help");
 	}
 	

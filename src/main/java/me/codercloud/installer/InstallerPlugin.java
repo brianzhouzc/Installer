@@ -24,6 +24,7 @@ public class InstallerPlugin extends JavaPlugin {
 				new SearchCommand(this),
 				new HelpCommand(),
 				new LoadCommand(this));
+		h.setDefaultHelpFormat(ChatColor.BLUE + "<Installer> Help Page (<page>/<maxpage>)", " -> ", ChatColor.RED + "No commands found!", ChatColor.GREEN, ChatColor.DARK_GREEN);
 		pluginUtil = new PluginUtil(this);
 	}
 	

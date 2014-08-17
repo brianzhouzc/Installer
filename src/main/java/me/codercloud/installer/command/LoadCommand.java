@@ -2,16 +2,17 @@ package me.codercloud.installer.command;
 
 import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.install.ProjectInstaller;
-import me.codercloud.installer.utils.CommandArgs;
 import me.codercloud.installer.utils.CommandHandler;
+import me.codercloud.installer.utils.CommandHandler.CommandListener;
 import me.codercloud.installer.utils.RunTask;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permissible;
 
-public class LoadCommand extends CommandArgs{
+public class LoadCommand extends CommandListener{
 	
 	InstallerPlugin p;
 
@@ -35,7 +36,7 @@ public class LoadCommand extends CommandArgs{
 	}
 	
 	@Override
-	public boolean hasPermission(CommandSender p) {
+	public boolean hasPermission(Permissible p) {
 		return p.hasPermission("installer.load");
 	}
 	

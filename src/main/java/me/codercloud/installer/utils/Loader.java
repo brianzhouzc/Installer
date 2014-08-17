@@ -16,9 +16,6 @@ public class Loader {
 	private URL url;
 	private byte[] postData;
 	
-	private double progress = 0f;
-	private int totalLength = -1;
-	private int read = -1;
 	
 	private byte[] result_b = null;
 	private String result_s = null;
@@ -28,18 +25,6 @@ public class Loader {
 	public Loader(String site, byte[] postData) throws MalformedURLException {
 		this.url = new URL(site);
 		this.postData = postData;
-	}
-	
-	public double getProgress() {
-		return progress;
-	}
-	
-	public int getRead() {
-		return read;
-	}
-	
-	public int getTotalLength() {
-		return totalLength;
 	}
 	
 	public URL getUrl() {
@@ -75,22 +60,15 @@ public class Loader {
 				System.out.println(hcon.getResponseMessage());
 			
 			is = con.getInputStream();
-			progress = 0.2;
 
 			
 			ByteArrayOutputStream res = new ByteArrayOutputStream();
 			
-			totalLength = con.getContentLength();
-			read = 0;
-			byte[] buff = new byte[32];
+			byte[] buff = new byte[1024];
 			int l;
 			
 			while((l = is.read(buff)) != -1) {
 				res.write(buff, 0, l);
-				read+=l;
-				if(totalLength > 0) {
-					progress = 0.2 + (double)read/(double)totalLength*0.8;
-				}
 			}
 			
 			res.flush();

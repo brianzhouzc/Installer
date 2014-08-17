@@ -2,7 +2,6 @@ package me.codercloud.installer.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.PluginIdentifiableCommand;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
@@ -169,10 +169,15 @@ public class PluginUtil {
 			
 			if (e == null)
 				throw new InvalidPluginException();
-			YamlConfiguration pluginyml = YamlConfiguration.loadConfiguration(new InputStreamReader(zip.getInputStream(e)));
-						
-			if(pluginyml == null)
+			
+			
+			YamlConfiguration pluginyml = new YamlConfiguration();
+			try {
+				pluginyml.loadFromString(new String(BaseUtil.readFully(zip.getInputStream(e))));
+			} catch (InvalidConfigurationException ex) {
 				throw new InvalidPluginException();
+			}
+
 			return pluginyml;
 		} catch (Exception e) {} finally {
 			try {

@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -14,13 +13,13 @@ import me.codercloud.installer.utils.BaseUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
 
 public class PluginFile {
-	private final YamlConfiguration pluginyml;
+	private final PluginDescriptionFile pluginyml;
 	private final byte[] data;
 	private final String name;
 	private final String version;
@@ -42,13 +41,14 @@ public class PluginFile {
 			
 			if (e == null)
 				throw new InvalidPluginException();
-			pluginyml = YamlConfiguration.loadConfiguration(new InputStreamReader(s));
+						
+			pluginyml = new PluginDescriptionFile(s);
 			
 			if(pluginyml == null)
 				throw new InvalidPluginException();
 			
-			name = pluginyml.getString("name");
-			version = pluginyml.getString("version");
+			name = pluginyml.getName();
+			version = pluginyml.getVersion();
 			
 			if(name == null || version == null)
 				throw new InvalidPluginException();
@@ -71,6 +71,10 @@ public class PluginFile {
 	
 	public boolean isUpdate() {
 		return Bukkit.getServer().getPluginManager().getPlugin(name) != null;
+	}
+	
+	public PluginDescriptionFile getDescription() {
+		return pluginyml;
 	}
 
 	public ItemStack asItemStack(boolean install) {

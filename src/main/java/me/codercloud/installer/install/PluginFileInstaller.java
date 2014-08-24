@@ -3,22 +3,24 @@ package me.codercloud.installer.install;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import me.codercloud.installer.InstallerPlugin;
-import me.codercloud.installer.utils.Task;
+import me.codercloud.installer.utils.Variable;
+import me.codercloud.installer.utils.task.Task;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.AuthorNagException;
-import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.UnknownDependencyException;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class PluginFileInstaller extends Task<InstallerPlugin> {
 	
@@ -37,135 +39,165 @@ public class PluginFileInstaller extends Task<InstallerPlugin> {
 	}
 	
 	@Override
-	public void run(InstallerPlugin plugin) {
-		if(files.length == 0) {
-			p.sendMessage(ChatColor.LIGHT_PURPLE + "No plugin to install selected");
-			return;
-		}
-		if(files.length == 1)
-			p.sendMessage(ChatColor.BLUE + "Starting instalation of 1 file");
-		else
-			p.sendMessage(ChatColor.BLUE + "Starting instalation of " + files.length + " files");
+	public void run(InstallerPlugin plugin, Variable<Boolean> cancelVar) {
 				
-		HashMap<String, String> installed = new HashMap<String, String>();
-		boolean reloadNeeded = false;
-		boolean error = false;
+		HashSet<String> unloading = new HashSet<String>(); 
 		
-		ArrayList<Plugin> toEnable = new ArrayList<Plugin>();
+		for(PluginFile f : files) {
+			Plugin p = Bukkit.getPluginManager().getPlugin(f.getName());
+			if(p != null)
+				unloading.add(p.getName());
+		}
 		
-		for(PluginFile pluginfile : files) {
-			if(installed.containsKey(pluginfile.getName())) {
-				p.sendMessage(ChatColor.LIGHT_PURPLE + "Didn't install " + pluginfile.getName() + " v" + pluginfile.getVersion() + ":\n  Already installed v" + installed.get(pluginfile.getName()));
+		boolean b = true;
+		while(b) {
+			b = false;
+			for(Plugin p : Bukkit.getPluginManager().getPlugins()) {
+				if(!unloading.contains(p.getName())) {
+					List<String> depend = p.getDescription().getDepend();
+					List<String> softdepend = p.getDescription().getSoftDepend();
+					for(String s : depend) {
+						if(unloading.contains(s)) {
+							unloading.add(p.getName());
+							b = true;
+						}
+					}
+					for(String s : softdepend)
+						if(unloading.contains(s)) {
+							unloading.add(p.getName());
+							b = true;
+						}
+				}
 			}
+		}
+		
+		HashMap<String, File> toLoad = new HashMap<String, File>();
+		
+		for(String s : unloading) {
+			Plugin p = Bukkit.getPluginManager().getPlugin(s);
+			if(p != null) {
+				boolean success = plugin.getPluginUtil().unloadPlugin(p);
+				if(!success)
+					this.p.sendMessage(ChatColor.RED + "Could not unload '" + p.getName() + "'");
+				else
+					toLoad.put(s, plugin.getPluginUtil().getPluginFile(p));
+			}
+		}
+		
+		for(PluginFile pluginfile : this.files) {
+			
 			try {
 				Plugin oldVersion = Bukkit.getPluginManager().getPlugin(pluginfile.getName());
 				boolean update = oldVersion != null;
 				
-				File output = null;
-				
-				if(update) {
-					Field f = JavaPlugin.class.getDeclaredField("file");
-					f.setAccessible(true);
-					output = (File) f.get(oldVersion);
-				} 
-				if (output == null)
+				File output = toLoad.get(pluginfile.getName());
+				if(output == null)
 					output = plugin.getPluginUtil().findFileForPlugin(pluginfile.getName());
 				if(output == null)
-					throw new AuthorNagException(ChatColor.RED + "Couldn't find a file for " + pluginfile.getName() + " v" + pluginfile.getVersion());
+					throw new AuthorNagException(ChatColor.RED + "Could not find file for '" + pluginfile.getName() + "'");
 				
-				if(!output.exists()) {
-					output.getParentFile().mkdirs();
-					output.createNewFile();
-				}
 				
 				OutputStream out = new FileOutputStream(output);
 				
 				out.write(pluginfile.getData());
 				
 				out.close();
-				
-				installed.put(pluginfile.getName(), (pluginfile.isUpdate() ? ChatColor.LIGHT_PURPLE : ChatColor.GREEN).toString());
-				
-				if(update && !plugin.getPluginUtil().unloadPlugin(oldVersion)) {
-					p.sendMessage(ChatColor.LIGHT_PURPLE + "Could not unload " + oldVersion.getName() + " v" + oldVersion.getDescription().getVersion());
-					reloadNeeded = true;
-					continue;
+								
+				if(!update) {
+					toLoad.put(pluginfile.getName(), output);
 				}
-				
-				try {
-					toEnable.add(Bukkit.getServer().getPluginManager().loadPlugin(output));
-				} catch (UnknownDependencyException e) {
-					p.sendMessage(ChatColor.LIGHT_PURPLE + "You need '" + e.getMessage() + "' installed to load " + pluginfile.getName());
-					continue;
-				} catch (InvalidPluginException e) {
-					Throwable cause = e.getCause();
-					if(cause != null && cause instanceof LinkageError) {
-						p.sendMessage(ChatColor.LIGHT_PURPLE + "Problems while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
-						reloadNeeded = true;
-						continue;
-					}
-					e.printStackTrace();
-					error = true;
-					throw new AuthorNagException(ChatColor.RED + "Error while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
-				} catch (Exception e) {
-					e.printStackTrace();
-					error = true;
-					throw new AuthorNagException(ChatColor.RED + "Error while loading " + pluginfile.getName() + " v" + pluginfile.getVersion());
-				}
-				
 			} catch (AuthorNagException e) {
 				p.sendMessage(e.getMessage());
 			} catch (Exception e) {
 				e.printStackTrace();
-				error = true;
 				p.sendMessage(ChatColor.RED + "Error while installing " + pluginfile.getName() + " v" + pluginfile.getVersion());
 			}
 		}
+				
+		HashMap<PluginDescriptionFile, File> load = new HashMap<PluginDescriptionFile, File>();
 		
-		if(installed.size() > 0) {
-			StringBuilder b = new StringBuilder();
-			for(Entry<String, String> pl : installed.entrySet()) {
-				if(b.length() != 0)
-					b.append(", ");
-				b.append(pl.getValue()).append(pl.getKey()).append(ChatColor.GREEN);
+		for(File f : toLoad.values()) {
+			PluginDescriptionFile d = plugin.getPluginUtil().getDescriptionFile(f);
+			if(d != null)
+				load.put(d, f);
+			else
+				p.sendMessage(ChatColor.RED + "Could not find plugin.yml in " + f);
+		}
+		
+		PluginDescriptionFile[] descs = setLoadOrder(load.keySet().toArray(new PluginDescriptionFile[load.keySet().size()]));
+		
+		ArrayList<Plugin> loaded = new ArrayList<Plugin>();
+		
+		for(PluginDescriptionFile d : descs) {
+			File f = load.get(d);
+			if(f != null) {
+				try {
+					loaded.add(Bukkit.getServer().getPluginManager().loadPlugin(f));
+				} catch (UnknownDependencyException e) {
+					p.sendMessage(ChatColor.LIGHT_PURPLE + "You need '" + e.getMessage() + "' installed to load " + d.getName());
+					continue;
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new AuthorNagException(ChatColor.RED + "Error while loading " + d.getName() + " v" + d.getVersion());
+				}
 			}
-			p.sendMessage(ChatColor.GREEN + "Successfully installed " + b.toString());
-		} else
-			p.sendMessage(ChatColor.BLUE + "No plugins installed successfully");
-		
-		
-		if(toEnable.size() > 0) {
-			for(Plugin pl : toEnable)
-				try {
-					pl.onLoad();
-				} catch (Throwable e) {
-					p.sendMessage(ChatColor.RED + "Error in onLoad() of " + pl.getName());
-					reloadNeeded = true;
-					continue;
-				}
-			
-			StringBuilder b = new StringBuilder();
-			for(Plugin pl : toEnable)
-				try {
-					Bukkit.getServer().getPluginManager().enablePlugin(pl);
-					if(b.length() != 0)
-						b.append(", ");
-					b.append(pl.getName());
-				} catch (Throwable e) {
-					p.sendMessage(ChatColor.RED + "Error while enabling " + pl.getName());
-					reloadNeeded = true;
-					continue;
-				}
-			if(b.length() != 0)
-				p.sendMessage(ChatColor.BLUE + "Enabled " + b.toString());
 		}
 		
-		if(error) {
-			p.sendMessage(ChatColor.RED + "An Error occured! A reload or restart might fix it, but its not guaranteed...\n"
-					+ "Errorreports got printed to the console");
-		} else if(reloadNeeded) {
-			p.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.ITALIC + "A reload or restart should apply all changes");
-		}
+		StringBuilder str = new StringBuilder();
+		for(Plugin pl : loaded)
+			try {
+				Bukkit.getServer().getPluginManager().enablePlugin(pl);
+				if(str.length() != 0)
+					str.append(", ");
+				str.append(pl.getName());
+			} catch (Throwable e) {
+				p.sendMessage(ChatColor.RED + "Error while enabling " + pl.getName());
+				continue;
+			}
+		if(str.length() != 0)
+			p.sendMessage(ChatColor.BLUE + "Enabled " + str.toString());
 	}
+	
+	private PluginDescriptionFile[] setLoadOrder(PluginDescriptionFile[] files) {
+		
+		ArrayList<PluginDescriptionFile> result = new ArrayList<PluginDescriptionFile>();
+		
+		Map<String, PluginDescriptionFile> plugins = new HashMap<String, PluginDescriptionFile>();
+		
+		for(PluginDescriptionFile f : files) {
+			plugins.put(f.getName(), f);
+		}
+		
+		int lenbuffer = 0;
+		
+		while(!plugins.isEmpty()) {
+			boolean skip = lenbuffer == plugins.size();
+			lenbuffer = plugins.size();
+			Iterator<PluginDescriptionFile> i = plugins.values().iterator();
+			while(i.hasNext()) {
+				PluginDescriptionFile d = i.next();
+				boolean b = true;
 
+				if(!skip) {
+					for (String s : d.getDepend())
+						if (plugins.containsKey(s))
+							b = false;
+
+					for (String s : d.getSoftDepend())
+						if (plugins.containsKey(s))
+							b = false;
+				}
+				
+				if(b) {
+					i.remove();
+					result.add(d);
+					break;
+				}
+			}
+		}
+		
+		
+		return result.toArray(new PluginDescriptionFile[result.size()]);
+	}
+	
 }

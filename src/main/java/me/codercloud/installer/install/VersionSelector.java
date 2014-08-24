@@ -5,7 +5,7 @@ import java.util.Comparator;
 
 import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.utils.BaseUtil;
-import me.codercloud.installer.utils.TaskMenu;
+import me.codercloud.installer.utils.task.TaskMenu;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -148,6 +148,12 @@ public class VersionSelector extends TaskMenu<InstallerPlugin> implements Compar
 
 	public int compare(Version p1, Version p2) {
 		return p1.compareTo(p2);
+	}
+
+	@Override
+	public void tryCancel() {
+		getPlayer().sendMessage(ChatColor.RED + "Your installation got canceled");
+		close();
 	}
 
 }

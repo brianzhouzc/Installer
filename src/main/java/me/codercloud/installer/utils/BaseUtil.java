@@ -19,7 +19,7 @@ public class BaseUtil  {
 			os.write(buff, 0, l);
 		}
 		
-		return null;
+		return os.toByteArray();
 	}
 	
 	public static String connect(String a, String ... strings) {

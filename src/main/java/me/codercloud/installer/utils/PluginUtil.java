@@ -22,6 +22,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -38,9 +39,9 @@ public class PluginUtil {
 		PluginManager pluginManager = Bukkit.getPluginManager();
 		if (pluginManager == null)
 			return false;
-		
+
 		String name = plugin.getName();
-		
+
 		List<Plugin> plugins = null;
 		Map<String, Plugin> lookupNames = null;
 		SimpleCommandMap commandMap = null;
@@ -107,10 +108,36 @@ public class PluginUtil {
 				((URLClassLoader) c).close();
 			} catch (IOException ex) {}
 		}
-		
+
 		System.gc();
 
 		return true;
+	}
+	
+	public PluginDescriptionFile getDescriptionFile(File f) {
+		ZipFile zip = null;
+		try {
+			zip = new ZipFile(f);
+			ZipEntry e = zip.getEntry("plugin.yml");
+			if(e != null)
+				return new PluginDescriptionFile(zip.getInputStream(e));
+		} catch (Exception e) {}
+		finally {
+			try {
+				if(zip != null)
+					zip.close();
+			} catch (Exception e) {}
+		}
+		return null;
+	}
+	
+	public File getPluginFile(Plugin plugin) {
+		try {
+			Field f = JavaPlugin.class.getDeclaredField("file");
+			f.setAccessible(true);
+			return (File) f.get(plugin);
+		} catch (Exception e) {}
+		return null;
 	}
 	
 	public File findFileForPlugin(String name) {
@@ -118,11 +145,7 @@ public class PluginUtil {
 		
 		Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin(name);
 		
-		try {
-			Field f = JavaPlugin.class.getDeclaredField("file");
-			f.setAccessible(true);
-			file = (File) f.get(plugin);
-		} catch (Exception e) {}
+		file = getPluginFile(plugin);
 		
 		if(file != null)
 			return file;

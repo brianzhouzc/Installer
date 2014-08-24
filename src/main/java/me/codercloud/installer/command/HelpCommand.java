@@ -17,16 +17,15 @@ public class HelpCommand extends CommandListener {
 	@Override
 	public void handleCommand(CommandHandler h, CommandSender sender,
 			Command command, String label, String[] args) {
-		String page = getVar("page", args);
-		
-		if(page == null)
+		if(isVarSet("page", args))
 			sender.sendMessage(h.getHelp(sender, 1, 5));
-		else
-			try {
+		else {
+			Integer page = getVarAsInt("page", args);
+			if(page != null)
 				sender.sendMessage(h.getHelp(sender, Integer.valueOf(page), 5));
-			} catch (NumberFormatException e) {
-				sender.sendMessage(ChatColor.RED + "'" + page + "' is not a number");
-			}
+			else
+				sender.sendMessage(ChatColor.RED + "'" + getVar("page", args) + "' is not a number");
+		}
 	}
 	
 	@Override

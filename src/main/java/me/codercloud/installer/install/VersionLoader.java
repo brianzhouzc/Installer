@@ -6,7 +6,8 @@ import java.util.ArrayList;
 
 import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.utils.Loader;
-import me.codercloud.installer.utils.Task;
+import me.codercloud.installer.utils.Variable;
+import me.codercloud.installer.utils.task.Task;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -24,13 +25,13 @@ public class VersionLoader extends Task<InstallerPlugin> {
 		this.project = project;
 	}
 
-	public void run(InstallerPlugin plugin) {
+	public void run(InstallerPlugin plugin, Variable<Boolean> cancelVar) {
 		
 		try {
 			Loader l = new Loader(getURL(), getPostData());
 			
 			try {
-				JSONArray a = (JSONArray) l.readURLJSON();
+				JSONArray a = (JSONArray) l.readURLJSON(cancelVar);
 				
 				ArrayList<Version> versions = new ArrayList<Version>();
 				
@@ -52,6 +53,8 @@ public class VersionLoader extends Task<InstallerPlugin> {
 				try {
 					setNextTask(new VersionSelector(player, project, versions.toArray(new Version[versions.size()])));
 				} catch(NullPointerException e) {}
+			} catch (InterruptedException e) {
+				player.sendMessage(ChatColor.RED + "Your download got canceled");
 			} catch (Exception e) {
 				e.printStackTrace();
 				player.sendMessage("Could not parse recieved data");
@@ -73,5 +76,11 @@ public class VersionLoader extends Task<InstallerPlugin> {
 	
 	private byte[] getPostData() throws IOException {
 		return null;
+	}
+
+	@Override
+	public void tryCancel() {
+		// TODO Auto-generated method stub
+		
 	}
 }

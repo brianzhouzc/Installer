@@ -31,7 +31,7 @@ public class Loader {
 		return url;
 	}
 	
-	public synchronized byte[] readURLBytes() throws IOException {
+	public synchronized byte[] readURLBytes(Variable<Boolean> cancel) throws IOException, InterruptedException {
 		if(result_b != null)
 			return result_b;
 		InputStream is = null;
@@ -69,6 +69,8 @@ public class Loader {
 			
 			while((l = is.read(buff)) != -1) {
 				res.write(buff, 0, l);
+				if(cancel.getValue() == true)
+					throw new InterruptedException();
 			}
 			
 			res.flush();
@@ -84,16 +86,16 @@ public class Loader {
 		}
 	}
 	
-	public String readURLString() throws IOException {
+	public String readURLString(Variable<Boolean> cancel) throws IOException, InterruptedException {
 		if(result_s != null)
 			return result_s;
-		return new String(readURLBytes());
+		return new String(readURLBytes(cancel));
 	}
 	
-	public Object readURLJSON() throws IOException {
+	public Object readURLJSON(Variable<Boolean> cancel) throws IOException, InterruptedException {
 		if(result_j != null)
 			return result_j;
-		return JSONValue.parse(readURLString());
+		return JSONValue.parse(readURLString(cancel));
 	}
 	
 }

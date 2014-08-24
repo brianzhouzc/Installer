@@ -8,6 +8,7 @@ import me.codercloud.installer.command.LoadCommand;
 import me.codercloud.installer.command.SearchCommand;
 import me.codercloud.installer.utils.CommandHandler;
 import me.codercloud.installer.utils.PluginUtil;
+import me.codercloud.installer.utils.task.RunTask;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -35,7 +36,7 @@ public class InstallerPlugin extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		
+		RunTask.tryCancelAll(this);
 	}
 	
 	@Override

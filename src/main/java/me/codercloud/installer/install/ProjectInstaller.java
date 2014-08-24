@@ -7,7 +7,8 @@ import java.util.ArrayList;
 
 import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.utils.Loader;
-import me.codercloud.installer.utils.Task;
+import me.codercloud.installer.utils.Variable;
+import me.codercloud.installer.utils.task.Task;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -37,14 +38,14 @@ public class ProjectInstaller extends Task<InstallerPlugin> {
 	}
 	
 	@Override
-	public void run(InstallerPlugin plugin) {
+	public void run(InstallerPlugin plugin, Variable<Boolean> cancelVar) {
 		try {
 			Loader l = new Loader(getURL(), getPostData());
 			
 			ArrayList<Project> projects = new ArrayList<Project>();
 						
 			try {
-				JSONArray a = (JSONArray) l.readURLJSON();
+				JSONArray a = (JSONArray) l.readURLJSON(cancelVar);
 				
 				for(int i = 0; i<a.size(); i++) {
 					JSONObject o = (JSONObject) a.get(i);
@@ -105,7 +106,9 @@ public class ProjectInstaller extends Task<InstallerPlugin> {
 					if(p.getSlug().equalsIgnoreCase(name))
 						setNextTask(new VersionLoader(player, p));
 				
-			} catch (Exception e) {
+			} catch (InterruptedException e) {
+				player.sendMessage(ChatColor.RED + "Your download got canceled");
+			}  catch (Exception e) {
 				e.printStackTrace();
 				player.sendMessage("Could not parse recieved data");
 			}
@@ -144,6 +147,12 @@ public class ProjectInstaller extends Task<InstallerPlugin> {
 		s.append("&fields=slug,plugin_name,stage,authors,curse_id,versions.date,versions.download");
 		
 		return s.toString().getBytes();
+	}
+
+	@Override
+	public void tryCancel() {
+		
+		
 	}
 
 }

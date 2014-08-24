@@ -8,7 +8,8 @@ import java.util.zip.ZipInputStream;
 
 import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.utils.Loader;
-import me.codercloud.installer.utils.Task;
+import me.codercloud.installer.utils.Variable;
+import me.codercloud.installer.utils.task.Task;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -27,13 +28,15 @@ public class PluginFileLoader extends Task<InstallerPlugin> {
 		this.version = version;
 	}
 
-	public void run(InstallerPlugin plugin) {
+	public void run(InstallerPlugin plugin, Variable<Boolean> cancelVar) {
 		try {
 			
 			Loader l = new Loader(version.getDownload(), null);
 			
-			setNextTask(new PluginFileSelector(player, project, version, parseData(l.readURLBytes())));
+			setNextTask(new PluginFileSelector(player, project, version, parseData(l.readURLBytes(cancelVar))));
 			
+		} catch (InterruptedException e) {
+			player.sendMessage(ChatColor.RED + "Your download got canceled");
 		} catch (AuthorNagException e) {
 			player.sendMessage(e.getMessage());
 			return;
@@ -85,6 +88,12 @@ public class PluginFileLoader extends Task<InstallerPlugin> {
 		}
 		
 		return new PluginFile[0];
+	}
+
+	@Override
+	public void tryCancel() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

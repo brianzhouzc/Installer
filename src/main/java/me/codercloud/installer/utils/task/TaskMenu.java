@@ -1,4 +1,6 @@
-package me.codercloud.installer.utils;
+package me.codercloud.installer.utils.task;
+
+import me.codercloud.installer.utils.Variable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -7,9 +9,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 
-public abstract class TaskMenu<T extends JavaPlugin> extends Task<T> {
+public abstract class TaskMenu<T extends Plugin> extends Task<T> {
 	
 	private Player player;
 	private Inventory i;
@@ -75,7 +77,7 @@ public abstract class TaskMenu<T extends JavaPlugin> extends Task<T> {
 	}
 	
 	@Override
-	public final void run(T plugin) {
+	public final void run(T plugin, Variable<Boolean> cancelVar) {
 		this.plugin = plugin;
 		this.close = false;
 		player.openInventory(i);

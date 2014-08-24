@@ -4,7 +4,7 @@ import me.codercloud.installer.InstallerPlugin;
 import me.codercloud.installer.install.ProjectInstaller;
 import me.codercloud.installer.utils.CommandHandler;
 import me.codercloud.installer.utils.CommandHandler.CommandListener;
-import me.codercloud.installer.utils.RunTask;
+import me.codercloud.installer.utils.task.RunTask;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -30,9 +30,7 @@ public class LoadCommand extends CommandListener{
 		}
 		try {
 			new RunTask<InstallerPlugin>(new ProjectInstaller((Player) sender, getVar("<...>", args)), p);
-		} catch (NullPointerException e) {
-			
-		}
+		} catch (NullPointerException e) {}
 	}
 	
 	@Override
